@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Machine Failure Prediction</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to right, #0062E6, #33AEFF);
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+        }
+        .form-container {
+            flex: 1;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            margin-right: 20px;
+            min-width: 300px;
+        }
+        .form-container h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #0062E6;
+        }
+        .form-container label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .form-container input,
+        .form-container select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .form-container button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #0062E6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .form-container button:hover {
+            background-color: #004bb5;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #0062E6;
+        }
+        .graph-container {
+            flex: 1;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            min-width: 300px;
+        }
+        .graph-container h2 {
+            font-size: 22px;
+            color: #0062E6;
+        }
+        .graph-container #tableau-graph {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ccc;
+            margin-top: 20px;
+        }
+        .chart-image {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .chart-image img {
+            width: 100%;
+            height: auto;
+        }
+        .chart-description {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <h1>Machine Failure Prediction</h1>
+            <form id="prediction-form">
+                <label for="type">Type:</label>
+                <select id="type" name="type" required>
+                    <option value="0">Type 0</option>
+                    <option value="1">Type 1</option>
+                    <option value="2">Type 2</option>
+                    <option value="3">Type 3</option>
+                    <option value="4">Type 4</option>
+                </select>
+                <small>Enter the machine type (0-4)</small><br><br>
+
+                <label for="air_temperature">Air temperature [K]:</label>
+                <input type="number" id="air_temperature" name="air_temperature" required>
+                <small>Range: 290 - 310. Use the arrows at the end of the input to scroll between values encoded in single digits</small><br><br>
+
+                <label for="process_temperature">Process temperature [K]:</label>
+                <input type="number" id="process_temperature" name="process_temperature" required>
+                <small>Range: 290 - 310. Use the arrows at the end of the input to scroll between values encoded in single digits</small><br><br>
+
+                <label for="rotational_speed">Rotational speed [rpm]:</label>
+                <input type="number" id="rotational_speed" name="rotational_speed" required>
+                <small>Range: 1000 - 3000. Use the arrows at the end of the input to scroll between values encoded in single digits</small><br><br>
+
+                <label for="torque">Torque [Nm]:</label>
+                <input type="number" id="torque" name="torque" required>
+                <small>Range: 30 - 70</small><br><br>
+
+                <label for="tool_wear">Tool wear [min]:</label>
+                <input type="number" id="tool_wear" name="tool_wear" required>
+                <small>Range: 0 - 300</small><br><br>
+
+                <button type="button" onclick="predictFailure()">Predict</button>
+            </form>
+
+            <h2 id="result"></h2>
+        </div>
+        <div class="graph-container">
+            <h2>Tableau Analysis Graph</h2>
+            <div id="tableau-graph"></div>
+            <div class="chart-description" id="graph-description">
+                This chart shows the correlation between different machine parameters and the occurrence of failures.
+            </div>
+            <div class="chart-image">
+                <img src="{{ url_for('static', filename='output.png') }}" alt="Chart Image 1">
+            </div>
+            <div class="chart-image">
+                <img src="{{ url_for('static', filename='image.png') }}" alt="Chart Image 2">
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="https://public.tableau.com/javascripts/api/tableau-2.8.0.min.js"></script>
+    <script>
+        function predictFailure() {
+            const type = document.getElementById('type').value;
+            const air_temperature = document.getElementById('air_temperature').value;
+            const process_temperature = document.getElementById('process_temperature').value;
+            const rotational_speed = document.getElementById('rotational_speed').value;
+            const torque = document.getElementById('torque').value;
+            const tool_wear = document.getElementById('tool_wear').value;
+
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    type: type,
+                    air_temperature: air_temperature,
+                    process_temperature: process_temperature,
+                    rotational_speed: rotational_speed,
+                    torque: torque,
+                    tool_wear: tool_wear
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerText = 'Machine Failure: ' + (data.machine_failure ? 'Yes' : 'No');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').innerText = 'Error occurred while predicting.';
+            });
+        }
+
+        function initViz() {
+            const containerDiv = document.getElementById("tableau-graph"),
+                url = "https://public.tableau.com/views/MachineFailureChart/CorrelationofHeat?:language=en-US&publish=yes&:sid=&:display_count=n&:origin=viz_share_link";
+            
+            const options = {
+                hideTabs: true,
+                onFirstInteractive: function () {
+                    console.log("Tableau visualization initialized.");
+                }
+            };
+            
+            const viz = new tableau.Viz(containerDiv, url, options);
+        }
+
+        document.addEventListener('DOMContentLoaded', initViz);
+    </script>
+</body>
+</html>
